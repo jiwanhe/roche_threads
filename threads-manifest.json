@@ -1,0 +1,15 @@
+{
+  "id": "roche-threads",
+  "name": "Threads",
+  "version": "1.0.0",
+  "description": "偷看 TA 的 Threads：AI 生成角色的串文動態",
+  "author": "予佟",
+  "entry": "plugin.js",
+  "hash": "",
+  "permissions": [
+    "storage",
+    "ui",
+    "character:read",
+    "persona:read"
+  ]
+}
