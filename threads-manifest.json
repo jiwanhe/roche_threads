@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "偷看 TA 的 Threads：AI 生成角色的串文動態",
   "author": "予佟",
-  "entry": "plugin.js",
+  "entry": "https://raw.githubusercontent.com/jiwanhe/roche_threads/refs/heads/main/threads-plugin.js",
   "hash": "",
   "permissions": [
     "storage",
