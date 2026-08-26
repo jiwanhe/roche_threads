@@ -167,21 +167,30 @@ const app={
 
     // ═══ 生成：首頁 NPC 串文 ═══
     const SYS_FEED=`你是 Threads 貼文模擬器。生成像真實 Threads/Twitter 用戶發的串文。
-規則：
+重要比例規則：
+- 每批串文中，最多只有 1-2 則跟角色興趣相關，其餘全是隨機話題——模擬真實演算法推薦的多樣性
+- 每則必須是不同領域、不同情境、不同情緒
+- 禁止連續出現同類話題
+- 每次生成的話題要新鮮，不要重複之前可能出現過的
+
+語氣規則：
 - Threads 風格：文字為主、短小精悍、觀點犀利、段子感強
-- 語氣混搭：有的嘴很毒但好笑、有的溫暖治癒、有的陰陽怪氣、有的純粹搞笑、有的是冷知識、有的是深夜感悟
-- 像真人碎碎念：「我發現了一個規律」「有人跟我一樣嗎」「在座各位有沒有」「說一個殘忍的事實」
-- 長度差異大：有些就一句話（10-30字），有些是小段落（80-200字），很少超過200字
-- 可以帶一點推特/噗浪/Threads 的梗和語氣
-- 暱稱要像真人帳號（英文ID+中文名混搭，如「@coffee_addict 咖啡因成癮者」「@midnightowl 夜貓」）
-- 每篇有 handle（@xxx格式）、author（顯示名稱）、text（串文內容）、likes、comments、reposts、time
-- 只回 JSON 陣列
-- 格式：[{"handle":"@xxx","author":"名稱","text":"內容","likes":123,"comments":12,"reposts":5,"time":"3小時"}]`;
+- 語氣混搭：嘴毒但好笑、溫暖治癒、陰陽怪氣、純搞笑、冷知識、深夜感悟、一本正經胡說八道
+- 像真人碎碎念：「我發現了一個規律」「有人跟我一樣嗎」「在座各位有沒有」「說一個殘忍的事實」「這條發出來我要被打」
+- 長度差異大：有些一句話（10-30字），有些小段落（80-200字）
+- 帶推特/噗浪/Threads 梗
+- 暱稱像真人帳號（@xxx + 中文名混搭）
+
+話題池（每次隨機抽，盡量不重複）：
+職場毒雞湯、感情觀點、社會觀察、科技吐槽、深夜哲學、美食評論、健身日常、養寵心得、租房血淚、追劇感想、遊戲心得、省錢技巧、通勤故事、天氣抱怨、網購翻車、相親故事、星座玄學、冷知識科普、教育觀點、環保議題、AI話題、音樂推薦、閱讀心得、運動賽事、城市生活、鄰里故事、節日吐槽、時尚觀點、攝影分享、搞笑段子、職業秘密、世代差異、語言梗
+
+只回 JSON 陣列。
+格式：[{"handle":"@xxx","author":"名稱","text":"內容","likes":123,"comments":12,"reposts":5,"time":"3小時"}]`;
 
     async function genFeed(){
       if(S.generating)return;S.generating=true;S.lastError='';render();
       const n=cn(),cnt=parseInt(S.cfg.genCount)||5,ctx=ctxLite();
-      const p=`生成 ${cnt} 則 Threads 串文。${ctx?`\n刷的人是「${n}」，部分內容要踩中TA興趣：\n${ctx}`:''}`;
+      const p=`生成 ${cnt} 則 Threads 串文。大部分是隨機熱門話題，只有 1-2 則跟角色有關。隨機種子：${Date.now()}\n${ctx?`\n刷的人是「${n}」的資料（僅供 1-2 則參考）：\n${ctx}`:''}`;
       try{
         const raw=await callAI(p,SYS_FEED);let arr=parseJSON(raw);
         if(!arr||!Array.isArray(arr))throw new Error('JSON 解析失敗：'+raw.slice(0,120));
