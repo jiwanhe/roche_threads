@@ -141,9 +141,39 @@ const app={
     function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
     function toast(m){const t=document.createElement('div');t.className='th-toast';t.textContent=m;root.appendChild(t);setTimeout(()=>t.remove(),2500)}
 
+
+    // ── 敏感字詞清洗層 ──
+    const SANITIZE_PATTERNS = [
+      /高潮|做愛|做爱|性交|口交|肛交|自慰|手淫|勃起|射精|內射|内射|外射|潮吹|性愛|性爱|性慾|性欲|性癖|性奴|性虐|淫|慾火|欲火|肉體|肉体|裸體|裸体|裸露/g,
+      /調教|绑缚|綁縛|繩縛|绳缚|繩藝|绳艺|捆綁|捆绑|鞭打|掌摑|掌掴|窒息|SM|BDSM|Dom|Sub|主奴|奴隸|奴隶|項圈|项圈|choker|皮鞭|蠟燭|蜡烛|夾子|口塞|口枷|束縛|束缚|受虐|施虐|臣服/gi,
+      /陰莖|阴茎|陰道|阴道|陰蒂|阴蒂|乳頭|乳头|乳房|胸部|私處|私处|下體|下体|龜頭|龟头|睪丸|睾丸|子宮|子宫|G點|G点|前列腺|肛門|肛门|會陰|会阴/g,
+      /跳蛋|按摩棒|飛機杯|飞机杯|情趣|潤滑|润滑|避孕套|保險套|保险套|縮陰球|缩阴球|震動|震动|假陽具|假阳具|肛塞|尿道/g,
+      /插入|抽插|深入|舔|吸吮|撫摸私|抚摸私|愛撫|爱抚|前戲|前戏|後入|后入|騎乘|骑乘|體位|体位|69|口爆|顏射|颜射|吞精|精液|體液|体液/g,
+      /毒品|大麻|可卡因|海洛因|冰毒|搖頭丸|迷藥|迷姦|強姦|強暴|性侵|猥褻/g,
+      /自殺|自殘|割腕|跳樓|上吊|服毒/g,
+    ];
+    const SENTENCE_KILL_PATTERNS = [
+      /引發.*連續.*高潮/,/施以.*深度.*調教/,/完成.*內射/,/邊緣控制/,/主導了.*調教/,
+      /掌摑與/,/言語羞辱/,/深度調教/,/求歡/,/求欢/,/難耐渴求/,
+      /情趣.*體驗/,/情趣.*体验/,/私密.*攝影/,/私密.*摄影/,
+      /皮質.*choker/i,/皮质.*choker/i,/下单.*绳艺/,/下單.*繩藝/,/训练器/,/訓練器/,/私密.*体验课/,/私密.*體驗課/,
+    ];
+    function sanitizeText(text){
+      if(!text)return '';let cleaned=String(text);
+      const sentences=cleaned.split(/[。！？\n]+/);
+      const safe=sentences.filter(s=>{const t=s.trim();if(!t)return true;return!SENTENCE_KILL_PATTERNS.some(p=>p.test(t));});
+      cleaned=safe.join('。');
+      SANITIZE_PATTERNS.forEach(p=>{cleaned=cleaned.replace(p,'***');});
+      cleaned=cleaned.replace(/(\*{3}[，、。；：\s]*){2,}/g,'（私密內容已略）');
+      cleaned=cleaned.replace(/\*{3}/g,'');
+      cleaned=cleaned.replace(/\n{3,}/g,'\n\n').trim();
+      return cleaned;
+    }
+    function sanitizePersona(p){if(!p)return '';let c=sanitizeText(p);c=c.replace(/\[NSFW[^\]]*\][\s\S]*?\[\/NSFW\]/gi,'');c=c.replace(/<nsfw[^>]*>[\s\S]*?<\/nsfw>/gi,'');return c;}
+
     // ── Context ──
-    function ctxLite(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色個性】\n${im.persona.slice(0,600)}\n`;if(im.coreSummary)c+=`\n【近況】\n${im.coreSummary.slice(0,400)}\n`;if(im.factMemories?.length)c+=`\n【最近的事】\n${im.factMemories.slice(0,4).map((f,i)=>`${i+1}. ${f.slice(0,120)}`).join('\n')}\n`;return c;}
-    function ctxFull(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色人設】\n${im.persona}\n`;if(im.coreSummary)c+=`\n【近況】\n${im.coreSummary}\n`;if(im.factMemories?.length)c+=`\n【近期事件】\n${im.factMemories.map((f,i)=>`${i+1}. ${f}`).join('\n')}\n`;if(im.recentMessages?.length)c+=`\n【說話語氣】\n${im.recentMessages.slice(-10).map(t=>'- '+t).join('\n')}\n`;return c;}
+    function ctxLite(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色個性】\n${sanitizePersona(im.persona).slice(0,600)}\n`;if(im.coreSummary)c+=`\n【近況】\n${sanitizeText(im.coreSummary).slice(0,400)}\n`;if(im.factMemories?.length)c+=`\n【最近的事】\n${im.factMemories.slice(0,4).map((f,i)=>`${i+1}. ${sanitizeText(f).slice(0,120)}`).filter(t=>t.length>10).join('\n')}\n`;return c;}
+    function ctxFull(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色人設】\n${sanitizePersona(im.persona)}\n`;if(im.coreSummary)c+=`\n【近況】\n${im.coreSummary}\n`;if(im.factMemories?.length)c+=`\n【近期事件】\n${im.factMemories.map((f,i)=>`${i+1}. ${sanitizeText(f)}`).filter(t=>t.length>10).join('\n')}\n`;if(im.recentMessages?.length)c+=`\n【說話語氣】\n${im.recentMessages.slice(-10).map(t=>'- '+sanitizeText(t)).filter(t=>t.length>5).join('\n')}\n`;return c;}
 
     // ── API ──
     async function callAI(p,sys){const msgs=[];if(sys)msgs.push({role:'system',content:sys});msgs.push({role:'user',content:p});const r=await roche.ai.chat({messages:msgs,max_tokens:8000});if(!r)throw new Error('AI 回應為空');return r.text||r.choices?.[0]?.message?.content||'';}
