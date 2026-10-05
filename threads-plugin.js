@@ -163,7 +163,7 @@ const app={
         try{const ltm=await roche.memory.getLongTerm();if(ltm?.core?.length)im.coreSummary=ltm.core.map(c=>c.summary||'').filter(Boolean).join('\n\n');if(ltm?.facts?.length)im.factMemories=ltm.facts.slice(0,10).map(f=>(f.action||'').slice(0,200)).filter(Boolean);}catch(_){}
         const allMsgs=[];
         const selIds=S.cfg.selectedConvIds||[];
-        const targetConvIds=selIds.length ? selIds : S.convList.filter(c=>{const ci=c.contactId||'';const ps=c.participants||[];const n=c.name||'';return ci===cid||ps.includes(cid)||n===S.cfg.charName;}).map(c=>c.conversationId||c.id);
+        const targetConvIds=selIds.length ? selIds : S.convList.filter(c=>{const convId=c.conversationId||c.id||'';const ci=c.contactId||'';const ps=c.participants||[];const n=c.name||'';return ci===cid||ps.includes(cid)||n===S.cfg.charName||convId.startsWith('group_');}).map(c=>c.conversationId||c.id);
         if(targetConvIds.length){
           for(const convId of targetConvIds){
             try{const stm=await roche.memory.getShortTerm({conversationId:convId});if(Array.isArray(stm))allMsgs.push(...stm.filter(m=>!m.isMe&&m.text));}
@@ -398,5 +398,5 @@ reply 欄位可省略。`;
     container.replaceChildren();
   }
 };
-window.RochePlugin.register({id:'roche-threads',name:'Threads',version:'1.0.0',description:'偷看 TA 的 Threads',author:'予佟',apps:[app]});
+window.RochePlugin.register({id:'roche-threads',name:'Threads',version:'2.0.0',description:'偷看 TA 的 Threads',author:'予佟',apps:[app]});
 })();
