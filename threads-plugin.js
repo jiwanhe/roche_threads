@@ -26,7 +26,7 @@ const app={
     const S={
       view:'home',detail:null,showSettings:false,generating:false,generatingComments:false,
       feedPosts:[],myPosts:[],savedPosts:[],liked:{},
-      cfg:{charId:'',charName:'',userId:'',userName:'',genCount:5},
+      cfg:{charId:'',charName:'',userId:'',userName:'',genCount:5,selectedConvIds:[]},
       charList:[],userList:[],
       imported:null,importMsg:'',importErr:false,
       lastError:'',profileTab:'threads',autoFetching:false,
@@ -142,38 +142,10 @@ const app={
     function toast(m){const t=document.createElement('div');t.className='th-toast';t.textContent=m;root.appendChild(t);setTimeout(()=>t.remove(),2500)}
 
 
-    // ── 敏感字詞清洗層 ──
-    const SANITIZE_PATTERNS = [
-      /高潮|做愛|做爱|性交|口交|肛交|自慰|手淫|勃起|射精|內射|内射|外射|潮吹|性愛|性爱|性慾|性欲|性癖|性奴|性虐|淫|慾火|欲火|肉體|肉体|裸體|裸体|裸露/g,
-      /調教|绑缚|綁縛|繩縛|绳缚|繩藝|绳艺|捆綁|捆绑|鞭打|掌摑|掌掴|窒息|SM|BDSM|Dom|Sub|主奴|奴隸|奴隶|項圈|项圈|choker|皮鞭|蠟燭|蜡烛|夾子|口塞|口枷|束縛|束缚|受虐|施虐|臣服/gi,
-      /陰莖|阴茎|陰道|阴道|陰蒂|阴蒂|乳頭|乳头|乳房|胸部|私處|私处|下體|下体|龜頭|龟头|睪丸|睾丸|子宮|子宫|G點|G点|前列腺|肛門|肛门|會陰|会阴/g,
-      /跳蛋|按摩棒|飛機杯|飞机杯|情趣|潤滑|润滑|避孕套|保險套|保险套|縮陰球|缩阴球|震動|震动|假陽具|假阳具|肛塞|尿道/g,
-      /插入|抽插|深入|舔|吸吮|撫摸私|抚摸私|愛撫|爱抚|前戲|前戏|後入|后入|騎乘|骑乘|體位|体位|69|口爆|顏射|颜射|吞精|精液|體液|体液/g,
-      /毒品|大麻|可卡因|海洛因|冰毒|搖頭丸|迷藥|迷姦|強姦|強暴|性侵|猥褻/g,
-      /自殺|自殘|割腕|跳樓|上吊|服毒/g,
-    ];
-    const SENTENCE_KILL_PATTERNS = [
-      /引發.*連續.*高潮/,/施以.*深度.*調教/,/完成.*內射/,/邊緣控制/,/主導了.*調教/,
-      /掌摑與/,/言語羞辱/,/深度調教/,/求歡/,/求欢/,/難耐渴求/,
-      /情趣.*體驗/,/情趣.*体验/,/私密.*攝影/,/私密.*摄影/,
-      /皮質.*choker/i,/皮质.*choker/i,/下单.*绳艺/,/下單.*繩藝/,/训练器/,/訓練器/,/私密.*体验课/,/私密.*體驗課/,
-    ];
-    function sanitizeText(text){
-      if(!text)return '';let cleaned=String(text);
-      const sentences=cleaned.split(/[。！？\n]+/);
-      const safe=sentences.filter(s=>{const t=s.trim();if(!t)return true;return!SENTENCE_KILL_PATTERNS.some(p=>p.test(t));});
-      cleaned=safe.join('。');
-      SANITIZE_PATTERNS.forEach(p=>{cleaned=cleaned.replace(p,'***');});
-      cleaned=cleaned.replace(/(\*{3}[，、。；：\s]*){2,}/g,'（私密內容已略）');
-      cleaned=cleaned.replace(/\*{3}/g,'');
-      cleaned=cleaned.replace(/\n{3,}/g,'\n\n').trim();
-      return cleaned;
-    }
-    function sanitizePersona(p){if(!p)return '';let c=sanitizeText(p);c=c.replace(/\[NSFW[^\]]*\][\s\S]*?\[\/NSFW\]/gi,'');c=c.replace(/<nsfw[^>]*>[\s\S]*?<\/nsfw>/gi,'');return c;}
 
     // ── Context ──
-    function ctxLite(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色個性】\n${sanitizePersona(im.persona).slice(0,600)}\n`;if(im.coreSummary)c+=`\n【近況】\n${sanitizeText(im.coreSummary).slice(0,400)}\n`;if(im.factMemories?.length)c+=`\n【最近的事】\n${im.factMemories.slice(0,4).map((f,i)=>`${i+1}. ${sanitizeText(f).slice(0,120)}`).filter(t=>t.length>10).join('\n')}\n`;return c;}
-    function ctxFull(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色人設】\n${sanitizePersona(im.persona)}\n`;if(im.coreSummary)c+=`\n【近況】\n${im.coreSummary}\n`;if(im.factMemories?.length)c+=`\n【近期事件】\n${im.factMemories.map((f,i)=>`${i+1}. ${sanitizeText(f)}`).filter(t=>t.length>10).join('\n')}\n`;if(im.recentMessages?.length)c+=`\n【說話語氣】\n${im.recentMessages.slice(-10).map(t=>'- '+sanitizeText(t)).filter(t=>t.length>5).join('\n')}\n`;return c;}
+    function ctxLite(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色個性】\n${im.persona.slice(0,600)}\n`;if(im.coreSummary)c+=`\n【近況】\n${im.coreSummary.slice(0,400)}\n`;if(im.factMemories?.length)c+=`\n【最近的事】\n${im.factMemories.slice(0,4).map((f,i)=>`${i+1}. ${f.slice(0,120)}`).join('\n')}\n`;return c;}
+    function ctxFull(){const im=S.imported;if(!im)return '';let c='';if(im.persona)c+=`\n【角色人設】\n${im.persona}\n`;if(im.coreSummary)c+=`\n【近況】\n${im.coreSummary}\n`;if(im.factMemories?.length)c+=`\n【近期事件】\n${im.factMemories.map((f,i)=>`${i+1}. ${f}`).join('\n')}\n`;if(im.recentMessages?.length)c+=`\n【說話語氣】\n${im.recentMessages.slice(-10).map(t=>'- '+t).join('\n')}\n`;return c;}
 
     // ── API ──
     async function callAI(p,sys){const msgs=[];if(sys)msgs.push({role:'system',content:sys});msgs.push({role:'user',content:p});const r=await roche.ai.chat({messages:msgs,max_tokens:8000});if(!r)throw new Error('AI 回應為空');return r.text||r.choices?.[0]?.message?.content||'';}
@@ -187,9 +159,22 @@ const app={
         const cid=S.cfg.charId;
         if(cid){try{const f=await roche.character.get(cid);if(f){im.name=f.name||f.handle||'';im.handle=f.handle||'';im.persona=f.persona||'';im.bio=f.bio||'';}}catch(_){}}
         if(!im.name){const ch=S.charList.find(c=>c.id===cid);if(ch)im.name=ch.name||ch.handle||'';}
+        // getLongTerm 已含所有對話的 core + facts
         try{const ltm=await roche.memory.getLongTerm();if(ltm?.core?.length)im.coreSummary=ltm.core.map(c=>c.summary||'').filter(Boolean).join('\n\n');if(ltm?.facts?.length)im.factMemories=ltm.facts.slice(0,10).map(f=>(f.action||'').slice(0,200)).filter(Boolean);}catch(_){}
-        try{const stm=await roche.memory.getShortTerm();if(Array.isArray(stm))im.recentMessages=stm.filter(m=>!m.isMe&&m.text).slice(-20).map(m=>m.text);}catch(_){}
-        if(im.name||im.persona||im.coreSummary){S.imported=im;await saveImported();if(!S.cfg.charName)S.cfg.charName=im.name;toast('✨ 已抓取 '+im.name);S.importMsg=`人設${im.persona?'✓':'✕'} 摘要${im.coreSummary?'✓':'✕'} 記憶${im.factMemories.length}筆`;S.importErr=false;}
+        const allMsgs=[];
+        const selIds=S.cfg.selectedConvIds||[];
+        const targetConvIds=selIds.length ? selIds : S.convList.filter(c=>{const ci=c.contactId||'';const ps=c.participants||[];const n=c.name||'';return ci===cid||ps.includes(cid)||n===S.cfg.charName;}).map(c=>c.conversationId||c.id);
+        if(targetConvIds.length){
+          for(const convId of targetConvIds){
+            try{const stm=await roche.memory.getShortTerm({conversationId:convId});if(Array.isArray(stm))allMsgs.push(...stm.filter(m=>!m.isMe&&m.text));}
+            catch(_){if(!allMsgs.length){try{const stm=await roche.memory.getShortTerm();if(Array.isArray(stm))allMsgs.push(...stm.filter(m=>!m.isMe&&m.text));}catch(_2){}}break;}
+          }
+        }else{try{const stm=await roche.memory.getShortTerm();if(Array.isArray(stm))allMsgs.push(...stm.filter(m=>!m.isMe&&m.text));}catch(_){}}
+        allMsgs.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
+        const seen=new Set();
+        im.recentMessages=allMsgs.filter(m=>{const k=m.text.slice(0,50);if(seen.has(k))return false;seen.add(k);return true;}).slice(-30).map(m=>m.text);
+        const convCount=targetConvIds.length||1;
+        if(im.name||im.persona||im.coreSummary){S.imported=im;await saveImported();if(!S.cfg.charName)S.cfg.charName=im.name;toast('✨ 已抓取 '+im.name);S.importMsg=`人設${im.persona?'✓':'✕'} 摘要${im.coreSummary?'✓':'✕'} 記憶${im.factMemories.length}筆 語氣${im.recentMessages.length}則（${convCount}個對話）`;S.importErr=false;}
         else{S.importMsg='沒有抓到資料';S.importErr=true;}
       }catch(e){S.importMsg='失敗：'+e.message;S.importErr=true;}
       S.autoFetching=false;render();
@@ -357,7 +342,11 @@ reply 欄位可省略。`;
       h+=`<label class="th-sl">👀 偷看誰的 Threads？</label><select class="th-si" data-f="charId">${S.charList.map(ch=>`<option value="${esc(ch.id)}" ${ch.id===c.charId?'selected':''}>${esc(ch.name||ch.handle)}</option>`).join('')}</select>`;
       h+=`<label class="th-sl">🙋 你是誰？</label><select class="th-si" data-f="userId">${S.userList.map(u=>`<option value="${esc(u.id)}" ${u.id===c.userId?'selected':''}>${esc(u.name||u.handle)}</option>`).join('')}</select>`;
       h+=`<label class="th-sl">每次生成幾則</label><input class="th-si" data-f="genCount" type="number" min="1" max="10" value="${c.genCount||5}" style="width:80px">`;
-      h+=`<button data-a="fetch-char" class="th-sbtn" style="background:#333;margin-top:12px" ${S.autoFetching?'disabled':''}>${S.autoFetching?'⏳ 抓取中...':'🚀 自動抓取角色資料'}</button>`;
+      const selConvs=c.selectedConvIds||[];
+      h+=`<label class="th-sl" style="margin-top:12px;padding-top:10px;border-top:1px solid ${BD}">📂 抓取哪些對話的記憶？</label>`;
+      h+=`<div style="max-height:160px;overflow-y:auto;background:#f5f5f5;border:1px solid ${BD};border-radius:10px;padding:6px">${S.convList.map(cv=>{const cid=cv.conversationId||cv.id;const nm=cv.name||cv.handle||cid;const isG=cid.startsWith('group_');const chk=selConvs.includes(cid);return`<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;border-radius:6px;font-size:12px${chk?';background:#e8e8e8':''}"><input type="checkbox" data-conv-id="${esc(cid)}" ${chk?'checked':''}><span>${isG?'👥':'💬'} ${esc(nm)}</span></label>`;}).join('')}</div>`;
+      h+=`<div style="display:flex;gap:6px;margin-top:4px"><button data-a="conv-all" style="padding:3px 10px;border-radius:8px;border:1px solid ${BD};background:#fff;color:${T2};font-size:11px;cursor:pointer">全選</button><button data-a="conv-none" style="padding:3px 10px;border-radius:8px;border:1px solid ${BD};background:#fff;color:${T2};font-size:11px;cursor:pointer">全不選</button></div>`;
+      h+=`<button data-a="fetch-char" class="th-sbtn" style="background:#333;margin-top:10px" ${S.autoFetching?'disabled':''}>${S.autoFetching?'⏳ 抓取中...':'🚀 自動抓取角色資料'}</button>`;
       if(S.imported)h+=`<div style="font-size:11px;color:${T2};background:#f5f5f5;border-radius:8px;padding:8px;margin-top:8px">已抓取：<strong>${esc(S.imported.name)}</strong>　${S.importMsg||''}</div>`;
       h+=`<button data-a="save-set" class="th-sbtn">儲存設定</button>`;
       h+=`<button data-a="clear-all" class="th-sbtn" style="background:#fff;color:#FF3040;border:1px solid #FF3040;margin-top:8px">🗑️ 清除所有內容</button>`;
@@ -382,13 +371,17 @@ reply 欄位可省略。`;
       else if(a==='close-dt'){S.detail=null;render();}
       else if(a==='like'){const k=b.dataset.k;S.liked[k]=!S.liked[k];render();}
       else if(a==='gen-replies'){const s=b.dataset.s,i=parseInt(b.dataset.i);const list=s==='feed'?S.feedPosts:s==='mine'?S.myPosts:S.savedPosts;if(!isNaN(i)&&list[i])genReplies(list[i]);}
+      else if(a==='conv-all'){root.querySelectorAll('[data-conv-id]').forEach(el=>{el.checked=true});}
+      else if(a==='conv-none'){root.querySelectorAll('[data-conv-id]').forEach(el=>{el.checked=false});}
       else if(a==='fetch-char'){
         root.querySelectorAll('[data-f]').forEach(el=>{S.cfg[el.dataset.f]=el.value;});
+        S.cfg.selectedConvIds=[];root.querySelectorAll('[data-conv-id]:checked').forEach(el=>{S.cfg.selectedConvIds.push(el.dataset.convId);});
         const ch=S.charList.find(c=>c.id===S.cfg.charId);if(ch)S.cfg.charName=ch.name||ch.handle||'';
         saveCfg();fetchChar();
       }
       else if(a==='save-set'){
         root.querySelectorAll('[data-f]').forEach(el=>{S.cfg[el.dataset.f]=el.value;});
+        S.cfg.selectedConvIds=[];root.querySelectorAll('[data-conv-id]:checked').forEach(el=>{S.cfg.selectedConvIds.push(el.dataset.convId);});
         const ch=S.charList.find(c=>c.id===S.cfg.charId);if(ch)S.cfg.charName=ch.name||ch.handle||'';
         saveCfg();S.showSettings=false;toast('已儲存');render();
       }
